@@ -1,0 +1,41 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+# Make the url for downloading the data file 
+# 
+# Args: 
+#   year: the year of the data file 
+#   quarter: the quarter of the data file 
+# 
+# Returns: 
+#   The url of the file name 
+make_urls <- function(year, quarter) {
+ paste0(
+   "https://projects.propublica.org/congress/assets/staffers/", year, "Q", quarter,  "-house-disburse-detail.csv"
+   )
+}
+
+# Make vectors of years and quarters
+years <- c(rep("2016", 4))
+quarters <- c(1:4)
+
+# Make a list of urls
+urls <- map2(years, quarters, make_urls)
+```
+
+```{r}
+all_data <- map(urls, read_csv)
+```
+
+```{r}
+# Make a table of mean amounts
+means <- map_dbl(all_data, ~mean(.$AMOUNT, na.rm = T)) %>% 
+  tibble()
+```
