@@ -5,6 +5,7 @@ output: html_notebook
 
 ```{r}
 library(tidyverse)
+library(magrittr)
 ```
 
 ```{r}
@@ -35,7 +36,22 @@ all_data <- map(urls, read_csv)
 ```
 
 ```{r}
-# Make a table of mean amounts
-means <- map_dbl(all_data, ~mean(.$AMOUNT, na.rm = T)) %>% 
-  tibble()
+# Add a filename vector
+# TODO make a nicer filename vector
+add_fnames <- function(dfs, names) {
+  dfs %>% mutate(file = paste0(names))
+}
+
+# Summarise mean
+get_mean <- function(dfs) {
+  dfs %>% 
+    group_by(file, CATEGORY) %>% 
+    summarise(mean = mean(AMOUNT, na.rm = T))
+}
+
+# Make a dataframe of file names and means
+all_data2 <- map2(all_data, urls, add_fnames) %>% 
+  map(., get_mean) %>% 
+  # TODO make nicer variable names
+  map_df(extract, c("file", "CATEGORY", "mean"))
 ```
