@@ -1,0 +1,81 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(magrittr)
+```
+
+```{r make URLs}
+# Make the url for downloading the data file 
+# 
+# Args: 
+#   year: the year of the data file 
+#   quarter: the quarter of the data file 
+# 
+# Returns: 
+#   The url of the file name 
+make_urls <- function(year, quarter) {
+ paste0(
+   "https://projects.propublica.org/congress/assets/staffers/", year, "Q", quarter,  "-house-disburse-detail.csv"
+   )
+}
+
+# Make vectors of years and quarters
+years <- c(rep("2016", 4))
+quarters <- c(1:4)
+
+# Make a list of urls
+urls <- map2(years, quarters, make_urls)
+```
+
+```{r read data}
+all_data <- map(urls, read_csv)
+```
+
+```{r filename vector function}
+add_fnames <- function(dfs, names) {
+  # Adds a column of filenames 
+  # 
+  # Args: 
+  #  dfs: a list of datasets 
+  #  names: a list of file names 
+  # 
+  # Returns: 
+  #   A list of datasets that have a file name vector
+  dfs %>% mutate(file = paste0(names))
+}
+```
+
+```{r function for getting mean spending}
+get_mean <- function(dfs) {
+  # Summarises a dataset by mean spending in each category 
+  # 
+  # Args: 
+  #   dfs: a list of datasets 
+  # 
+  # Returns: 
+  #   A list of datasets summarising average spending in each category
+  dfs %>% 
+    rename(category = CATEGORY) %>%
+    group_by(file, category) %>% 
+    summarise(avg_spend = mean(AMOUNT, na.rm = T))
+}
+```
+
+```{r mean spending dataset}
+# Make file names 
+short_names <- map2(years, quarters, ~paste0(.x, "_Q", .y))
+
+# Make a dataframe of file names and means
+all_data2 <- map2(all_data, short_names, add_fnames) %>% 
+  map(., get_mean) %>% 
+  map_df(extract, c("file", "category", "avg_spend"))
+```
+
+```{r write to csv}
+# Write to CSV 
+write_csv(all_data2, path = file.path(getwd(), "loop_test_output.csv"))
+```
