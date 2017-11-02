@@ -4,6 +4,7 @@ output: html_notebook
 ---
 
 ```{r}
+library(plyr) #make sure to load this before tidyverse because plyr causes issues if it's loaded after dplyr
 library(tidyverse)
 library(magrittr)
 ```
@@ -78,4 +79,31 @@ all_data2 <- map2(all_data, short_names, add_fnames) %>%
 ```{r write to csv}
 # Write to CSV 
 write_csv(all_data2, path = file.path(getwd(), "loop_test_output.csv"))
+```
+
+```{r}
+
+# This shows that there are actually two "versions" of spelling used for "Rent, Communication, Utilities":
+    # 1) RENT COMMUNICATION UTILITIES (no commas used)
+    # 2) RENT, COMMUNICATION, UTILITIES (2 commas used)
+View(all_data2 %>% 
+       ungroup() %>% 
+       select(category) %>% 
+       distinct() %>% 
+       arrange(category)
+     )
+
+# This doesn't affect your analyses as the two versions are used in different quarters, but if you were to do
+# the same computation of average spending by year, you'll get undesirable results, as you'll have one row for
+# "no commas used" and one row for "2 commas used".
+
+All_Quarters_2016 <- rbind.fill(all_data)
+
+
+View(All_Quarters_2016 %>%
+       group_by(CATEGORY) %>% 
+       summarise(avg_spend = mean(AMOUNT, na.rm = TRUE)
+                 ) %>% 
+       arrange(CATEGORY)
+     )
 ```
